@@ -4,6 +4,20 @@ A local web UI for editing `llama-server` flags, saving named profiles, and star
 
 It runs entirely on `127.0.0.1`, talks to a small Python stdlib HTTP server, and stores everything in plain files next to the `llamacpp` binaries.
 
+It won't create the file if its not already there. And it won't create the .ps1 either, as this was made for use with my **[Homelab Deployment](https://github.com/bankenichi/Homelab-Deployment)** stack. However you can easily create the an empty `llama-args.txt` file and after selecting your flags it should be able to save them. As for the run-llama.ps1 file...
+
+Paste this into a file and save it as run-llama.ps1 copy-paste that file into your llamacpp folder (by default the scripts in this repo assume it to be in C:/Program Files/llamacpp, further modifications might be required if you install it elsewhere):
+
+```
+$exePath = "Path to your llama-server.exe"
+$argsFile = "Path to your llama-args.txt"
+if (!(Test-Path $argsFile)) { Write-Error "Config not found: $argsFile"; exit 1 }
+$argsText = (Get-Content $argsFile -Raw).Trim()
+$argsList = [regex]::Matches($argsText, '(?:"[^"]*"|[^\s]+)') | ForEach-Object { $_.Value }
+Write-Host "Booting llama-server..." -ForegroundColor Cyan
+& $exePath @argsList
+```
+
 ## Quick start
 
 ```text
@@ -69,6 +83,7 @@ Profiles are named bundles of flags stored in `profiles.json`. Save the current 
 - **▶ Start Server** runs `run-llama.ps1` in the `llamacpp` directory via PowerShell, records the PID in `server.pid`.
 - **⏹ Stop Server** reads that PID and runs `taskkill /F /PID …`.
 - The status pill polls `/api/status` every 10 s.
+- **Launch Opencode** runs Opencode and launches it into a separate terminal.
 
 This is intentionally minimal — it doesn't capture stdout or restart on crash. For long-running production setups you'd want something heavier.
 
