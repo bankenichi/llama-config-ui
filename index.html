@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Llama Server Config</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>Llama Server Config</h1>
+      <div class="profile-controls">
+        <select id="profile-select" title="Select profile">
+          <option value="">— No profile —</option>
+        </select>
+        <button id="btn-new-profile" title="Create new profile">+</button>
+        <button id="btn-save-profile" title="Save as profile">✟ Save Profile</button>
+        <button id="btn-delete-profile" title="Delete selected profile">✗ Delete</button>
+        <button id="btn-reset" title="Reset to defaults">⟳ Reset</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="model-section">
+        <h2>Model Selection</h2>
+        <div class="model-controls">
+          <button id="btn-current-dir" title="Use current llamacpp directory">Folder Current</button>
+          <button id="btn-browse-dir" title="Browse folders (server-side, works for Program Files)">Browse...</button>
+          <input type="text" id="model-dir" placeholder="Paste folder path (e.g. C:\Program Files\llamacpp)" title="Model directory path">
+        </div>
+        <div class="model-fields">
+          <label>
+            Main Model
+            <select id="sel-model">
+              <option value="">— Select model —</option>
+            </select>
+          </label>
+          <label>
+            MMProj (vision)
+            <select id="sel-mmproj">
+              <option value="">— No mmproj —</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <div id="args-container">
+
+        <section class="arg-section common" id="sec-common">
+          <h2 class="section-header" onclick="toggleSection('common')">Common Settings ▾</h2>
+          <div class="section-content">
+
+            <div class="field-group">
+              <!-- Text & numeric fields -->
+
+              <label>Model path <input id="f-model" type="text" data-hint="Path to the model file (.gguf)."></input></label>
+
+              <label>MMproj path <input id="f-mmproj-path" type="text" data-hint="Path to the vision model (.gguf) for multimodal use."></input></label>
+
+              <label>Context size <input id="f-ctx-size" placeholder="0 = model default" type="text" data-hint="Context window size in tokens (0 = model default)."></input></label>
+
+              <label>GPU layers <input id="f-gpu-layers" placeholder="auto, or N" type="text" data-hint="Layers to offload to GPU (0 = CPU only, -1 = all)."></input></label>
+
+              <label>N CPU MoE <input id="f-n-cpu-moe" type="text" data-hint="How many CPU cores to use for MoE sub-layers."></input></label>
+
+              <label>Keep tokens <input id="f-keep" placeholder="0 (-1 = all)" type="text" data-hint="Number of tokens to keep in context (-1 = keep all)."></input></label>
+
+              <label>Parallel slots <input id="f-parallel" type="text" data-hint="Number of parallel request slots."></input></label>
+
+              <label>Port <input id="f-port" placeholder="8080" type="text" data-hint="Port the HTTP server listens on."></input></label>
+
+              <label>Threads <input id="f-threads" type="text" data-hint="Number of CPU threads for inference."></input></label>
+
+              <label>Temperature <input id="f-temperature" placeholder="0.80" type="text" data-hint="Controls randomness in sampling (lower = more deterministic)."></input></label>
+
+              <label>Top-p <input id="f-top-p" placeholder="0.95" type="text" data-hint="Nucleus sampling: top fraction of probability mass to consider."></input></label>
+
+              <label>Min-p <input id="f-min-p" type="text" data-hint="Minimum probability threshold for token selection."></input></label>
+
+              <label>Top-k <input id="f-top-k" placeholder="40" type="text" data-hint="Sample only from top N most likely tokens."></input></label>
+
+              <label>Spec draft n-max <input id="f-spec-draft-n-max" type="text" data-hint="Maximum number of speculative tokens per turn."></input></label>
+
+
+            <!-- Dropdowns -->
+
+              <label>Cache type K
+                <select id="f-cache-type-k" data-hint="KV cache precision for K cache.">
+              <option value="default (f16)"></option>
+              <option value="f16">f16</option>
+              <option value="f32">f32</option>
+              <option value="bf16">bf16</option>
+              <option value="q8_0">q8_0</option>
+              <option value="q4_0">q4_0</option>
+              <option value="q4_1">q4_1</option>
+              <option value="iq4_nl">iq4_nl</option>
+              <option value="q5_0">q5_0</option>
+              <option value="q5_1">q5_1</option>
+              <option value="turbo2">turbo2</option>
+              <option value="turbo3">turbo3</option>
+              <option value="turbo4">turbo4</option>
+                </select>
+              </label>
+
+              <label>Cache type V
+                <select id="f-cache-type-v" data-hint="KV cache precision for V cache.">
+              <option value="default (f16)"></option>
+              <option value="f16">f16</option>
+              <option value="f32">f32</option>
+              <option value="bf16">bf16</option>
+              <option value="q8_0">q8_0</option>
+              <option value="q4_0">q4_0</option>
+              <option value="q4_1">q4_1</option>
+              <option value="iq4_nl">iq4_nl</option>
+              <option value="q5_0">q5_0</option>
+              <option value="q5_1">q5_1</option>
+              <option value="turbo2">turbo2</option>
+              <option value="turbo3">turbo3</option>
+              <option value="turbo4">turbo4</option>
+                </select>
+              </label>
+
+              <label>Speculative decoding
+                <select id="f-spec-type" data-hint="Speculative decoding mode (none = disabled).">
+              <option value="none"></option>
+              <option value="mtp">mtp</option>
+              <option value="ngram-cache">ngram-cache</option>
+              <option value="ngram-simple">ngram-simple</option>
+              <option value="ngram-map-k">ngram-map-k</option>
+              <option value="ngram-map-k4v">ngram-map-k4v</option>
+              <option value="ngram-mod">ngram-mod</option>
+                </select>
+              </label>
+
+
+            <!-- Toggles -->
+
+              <label class="checkbox"><input id="f-mlock" type="checkbox" data-hint="Lock model in RAM (prevents swapping, uses more memory).">Lock model in RAM (--mlock)</input></label>
+
+              <label class="checkbox"><input id="f-mmap" type="checkbox" checked data-hint="Use memory-mapped file loading (saves RAM).">Memory-map model (--mmap)</input></label>
+
+              <label class="checkbox"><input id="f-jinja" type="checkbox" data-hint="Use Jinja template for chat formatting.">Use Jinja chat template (--jinja)</input></label>
+
+              <label class="checkbox"><input id="f-context-shift" type="checkbox" data-hint="Shift context when rotating slots (saves memory).">Context shift (--context-shift)</input></label>
+
+          </div>
+        </section>
+
+
+        <div id="advanced-toggle-row">
+
+          <label class="checkbox" title="Reveal every llama-server flag">
+
+            <input id="toggle-advanced" type="checkbox">
+
+            <span>⚙ Show advanced settings</span>
+
+          </label>
+
+          <span class="text-muted advanced-hint">More flags, finer control. Defaults work for most setups.</span>
+
+        </div>
+
+
+        <section class="arg-section advanced-only" id="sec-general">
+
+          <h2 class="section-header" onclick="toggleSection('general')">General ▾</h2>
+
+          <div class="section-content">
+
+            <div class="field-group">
+
+              <label>Threads batch <input id="f-threads-batch" placeholder="same as threads" type="text" data-hint="Threads used during batching."></input></label>
+
+              <label>N predict <input id="f-n-predict" placeholder="-1 = infinity" type="text" data-hint="Max tokens to generate (-1 = generate until stopped)."></input></label>
+
+              <label>Batch size <input id="f-batch-size" placeholder="2048" type="text" data-hint="Input batch size for prompt processing."></input></label>
+
+              <label>Ubatch size <input id="f-ubatch-size" placeholder="512" type="text" data-hint="Input batch size for user requests."></input></label>
+
+              <label>Alias <input id="f-alias" placeholder="model name alias" type="text" data-hint="Short name shown in logs/status."></input></label>
+
+              <label>Tags <input id="f-tags" placeholder="comma-separated" type="text" data-hint="Comma-separated metadata tags."></input></label>
+
+            </div>
+
+            <div class="field-group checkbox-group">
+
+              <label class="checkbox"><input id="f-swap-full" type="checkbox" data-hint="Use full sequence-aware attention (SWA) cache.">Use full SWA cache </input></label>
+
+            </div>
+
+          </div>
+        </section>
+
+
+        <section class="arg-section advanced-only" id="sec-gpu">
+
+          <h2 class="section-header" onclick="toggleSection('gpu')">GPU ▾</h2>
+
+          <div class="section-content">
+
+            <div class="field-group">
+
+              <label>Tensor split <input id="f-tensor-split" placeholder="3,1" type="text" data-hint="Split tensors across GPUs (comma-separated fractions)."></input></label>
+
+              <label>Device <input id="f-device" placeholder="comma-separated GPU IDs, or 'none'" type="text" data-hint="Device IDs to use (e.g. "0,1" or "none")."></input></label>
+
+              <label>Main GPU <input id="f-main-gpu" placeholder="0" type="text" data-hint="Main GPU for operations that need a primary device."></input></label>
+
+              <label>Fit target MiB <input id="f-fit-target" placeholder="1024" type="text" data-hint="Target VRAM in MiB when auto-fitting."></input></label>
+
+              <label>Fit ctx <input id="f-fit-ctx" placeholder="4096" type="text" data-hint="Context size to fit VRAM for."></input></label>
+
+              <label>Override tensor <input id="f-override-tensor" placeholder="tensor=type,tensor=type" type="text" data-hint="Override tensor types (e.g. "k=type,v=type")."></input></label>
+
+            </div>
+
+            <div class="field-group">
+
+              <label>Split mode
+                <select id="f-split-mode" data-hint="How to split model across GPUs (none/layer/row/tensor).">
+              <option value="auto"></option>
+              <option value="none">none</option>
+              <option value="layer">layer</option>
+              <option value="row">row</option>
+              <option value="tensor">tensor</option>
+                </select>
+              </label>
+
+              <label>Fit
+                <select id="f-fit" data-hint="Auto-fit model to available VRAM (auto/on/off).">
+              <option value="auto"></option>
+              <option value="on">on</option>
+              <option value="off">off</option>
+                </select>
+              </label>
+
+            </div>
+
+            <div class="field-group checkbox-group">
+
+              <label class="checkbox"><input id="f-check-tensors" type="checkbox" data-hint="Validate tensor types on load.">Check tensors </input></label>
+
+              <label class="checkbox"><input id="f-direct-io" type="checkbox" data-hint="Direct I/O for faster file access.">Direct IO </input></label>
+
+            </div>
+
+          </div>
+        </section>
+
+
+        <section class="arg-section advanced-only" id="sec-memory">
+
+          <h2 class="section-header" onclick="toggleSection('memory')">Memory ▾</h2>
+
+          <div class="section-content">
+
+            <div class="field-group checkbox-group">
+
+              <label class="checkbox"><input id="f-kv-offload" type="checkbox" checked data-hint="Offload KV cache to CPU when VRAM is low.">KV offload </input></label>
+
+              <label class="checkbox"><input id="f-repack" type="checkbox" checked data-hint="Repack weights for better memory layout.">Weight repack </input></label>
+
+            </div>
+
+          </div>
+        </section>
+
+
+        <section class="arg-section advanced-only" id="sec-context">
+
+          <h2 class="section-header" onclick="toggleSection('context')">Context ▾</h2>
+
+          <div class="section-content">
+
+            <div class="field-group">
+
+              <label>Rope scale <input id="f-rope-scale" placeholder="1.0" type="text" data-hint="Scale factor for RoPE embeddings."></input></label>
+
+              <label>Rope freq base <input id="f-rope-freq-base" placeholder="model default" type="text" data-hint="Base frequency for RoPE."></input></label>
+
+              <label>Rope freq scale <input id="f-rope-freq-scale" placeholder="1.0" type="text" data-hint="Frequency scaling factor for RoPE."></input></label>
+
+              <label>YaRN orig ctx <input id="f-yarn-orig-ctx" placeholder="0" type="text" data-hint="Original context size for YaRN scaling."></input></label>
+
+              <label>YaRN ext factor <input id="f-yarn-ext-factor" placeholder="-1.0" type="text" data-hint="Extension factor for YaRN."></input></label>
+
+              <label>Checkpoint every N <input id="f-checkpoint-every" placeholder="8192" type="text" data-hint="Save context checkpoint every N tokens."></input></label>
+
+              <label>Cache RAM (MiB) <input id="f-cache-ram" placeholder="8192" type="text" data-hint="Cache RAM size in MiB."></input></label>
+
+            </div>
+
+            <div class="field-group">
+
+              <label>Rope scaling
+                <select id="f-rope-scaling" data-hint="RoPE scaling method (none/linear/yarn).">
+              <option value="auto"></option>
+              <option value="none">none</option>
+              <option value="linear">linear</option>
+              <option value="yarn">yarn</option>
+                </select>
+              </label>
+
+            </div>
+
+            <div class="field-group checkbox-group">
+
+              <label class="checkbox"><input id="f-kv-unified" type="checkbox" checked data-hint="Use unified KV buffer across all layers.">Unified KV buffer </input></label>
+
+              <label class="checkbox"><input id="f-cache-idle" type="checkbox" data-hint="Keep KV cache active while idle.">Cache idle slots </input></label>
+
+            </div>
+
+          </div>
+        </section>
+
+
+        <section class="arg-section advanced-only" id="sec-sampling">
+
+          <h2 class="section-header" onclick="toggleSection('sampling')">Sampling ▾</h2>
+
+          <div class="section-content">
+
+            <div class="field-group">
+
+              <label>Top-n-sigma <input id="f-top-n-sigma" placeholder="-1.0" type="text" data-hint="Top-n sigma sampler threshold (-1 = off)."></input></label>
+
+              <label>Typical p <input id="f-typical-p" placeholder="1.00" type="text" data-hint="Typical sampling parameter."></input></label>
+
+              <label>XTC probability <input id="f-xtc-probability" placeholder="0.00" type="text" data-hint="XTC probability threshold."></input></label>
+
+              <label>XTC threshold <input id="f-xtc-threshold" placeholder="0.10" type="text" data-hint="XTC token removal threshold."></input></label>
+
+              <label>Repeat last n <input id="f-repeat-last-n" placeholder="64" type="text" data-hint="How far back to look for repetition."></input></label>
+
+              <label>Repeat penalty <input id="f-repeat-penalty" placeholder="1.00" type="text" data-hint="Penalty for repeated tokens."></input></label>
+
+              <label>Presence penalty <input id="f-presence-penalty" placeholder="0.00" type="text" data-hint="Penalty for tokens already present."></input></label>
+
+              <label>Frequency penalty <input id="f-frequency-penalty" placeholder="0.00" type="text" data-hint="Penalty based on token frequency."></input></label>
+
+              <label>Seed <input id="f-seed" placeholder="-1" type="text" data-hint="Random seed for reproducibility (-1 = random)."></input></label>
+
+              <label>Samplers <input id="f-samplers" placeholder="penalties;dry;top_k;..." type="text" data-hint="Comma-separated sampler list (penalties;dry;top_k;...)."></input></label>
+
+              <label>Dyna-temp range <input id="f-dynatemp-range" placeholder="0.00" type="text" data-hint="Dynamic temperature range."></input></label>
+
+              <label>Dyna-temp exp <input id="f-dynatemp-exp" placeholder="1.00" type="text" data-hint="Dynamic temperature exponent."></input></label>
+
+              <label>Adaptive target <input id="f-adaptive-target" placeholder="-1.00" type="text" data-hint="Adaptive temperature target (-1 = off)."></input></label>
+
+              <label>Adaptive decay <input id="f-adaptive-decay" placeholder="0.90" type="text" data-hint="Adaptive temperature decay rate."></input></label>
+
+              <label>MIROSTAT lr <input id="f-mirostat-lr" placeholder="0.10" type="text" data-hint="Mirostat learning rate."></input></label>
+
+              <label>MIROSTAT tau <input id="f-mirostat-tau" placeholder="5.00" type="text" data-hint="Mirostat target entropy."></input></label>
+
+              <label>Logit bias <input id="f-logit-bias" placeholder="15043+1" type="text" data-hint="Modify logits (e.g. "15043+1")."></input></label>
+
+              <label>Grammar <input id="f-grammar" placeholder="BNF grammar string" type="text" data-hint="BNF grammar string for constrained output."></input></label>
+
+              <label>JSON schema file <input id="f-json-schema-file" placeholder="path/to/schema.json" type="text" data-hint="Path to JSON schema file."></input></label>
+
+              <label>Grammar file <input id="f-grammar-file" placeholder="path/to/grammar" type="text" data-hint="Path to grammar file."></input></label>
+
+              <label>DRY multiplier <input id="f-dry-multiplier" placeholder="0.00" type="text" data-hint="DRY repetition penalty multiplier."></input></label>
+
+              <label>DRY base <input id="f-dry-base" placeholder="1.75" type="text" data-hint="DRY base parameter."></input></label>
+
+              <label>DRY allowed length <input id="f-dry-allowed-length" placeholder="2" type="text" data-hint="DRY allowed sequence length."></input></label>
+
+              <label>DRY penalty last n <input id="f-dry-penalty-last-n" placeholder="-1" type="text" data-hint="DRY penalty look-back length (-1 = all)."></input></label>
+
+              <label>DRY sequence breaker <input id="f-dry-sequence-breaker" placeholder="'none' or custom string" type="text" data-hint="DRY sequence breaker (or "none")."></input></label>
+
+              <label>JSON schema <textarea id="f-json-schema" rows="3" placeholder="{}" data-hint="JSON schema string for constrained output."></textarea></label>
+
+            </div>
+
+            <div class="field-group">
+
+              <label>MIROSTAT
+                <select id="f-mirostat" data-hint="Mirostat version (off/1/2).">
+              <option value="off (0)">0</option>
+              <option value="Mirostat 1 (1)">1</option>
+              <option value="Mirostat 2 (2)">2</option>
+                </select>
+              </label>
+
+            </div>
+
+            <div class="field-group checkbox-group">
+
+              <label class="checkbox"><input id="f-ignore-eos" type="checkbox" data-hint="Ignore end-of-sequence token.">Ignore EOS </input></label>
+
+            </div>
+
+          </div>
+        </section>
+
+
+        <section class="arg-section advanced-only" id="sec-server">
+
+          <h2 class="section-header" onclick="toggleSection('server')">Server ▾</h2>
+
+          <div class="section-content">
+
+            <div class="field-group">
+
+              <label>Host <input id="f-host" placeholder="127.0.0.1" type="text" data-hint="Server bind address."></input></label>
+
+              <label>Static path <input id="f-static-path" placeholder="path/to/static" type="text" data-hint="Static file serving directory."></input></label>
+
+              <label>API prefix <input id="f-api-prefix" placeholder="/v1" type="text" data-hint="API URL prefix (e.g. "/v1")."></input></label>
+
+              <label>Timeout <input id="f-timeout" placeholder="600" type="text" data-hint="Idle timeout in seconds."></input></label>
+
+              <label>Threads HTTP <input id="f-threads-http" placeholder="-1" type="text" data-hint="HTTP threads (-1 = auto)."></input></label>
+
+              <label>API key <input id="f-api-key" placeholder="secret-key" type="text" data-hint="API key for authentication."></input></label>
+
+              <label>API key file <input id="f-api-key-file" placeholder="path/to/keys.txt" type="text" data-hint="File containing API keys."></input></label>
+
+              <label>SSL key file <input id="f-ssl-key-file" placeholder="path/to/key.pem" type="text" data-hint="SSL private key file."></input></label>
+
+              <label>SSL cert file <input id="f-ssl-cert-file" placeholder="path/to/cert.pem" type="text" data-hint="SSL certificate file."></input></label>
+
+            </div>
+
+            <div class="field-group">
+
+              <label>Log level
+                <select id="f-log-verbosity" data-hint="Log verbosity level (0=off ... 4=debug).">
+              <option value="default"></option>
+              <option value="0 - generic">0</option>
+              <option value="1 - error">1</option>
+              <option value="2 - warning">2</option>
+              <option value="3 - info">3</option>
+              <option value="4 - debug">4</option>
+                </select>
+              </label>
+
+            </div>
+
+            <div class="field-group checkbox-group">
+
+              <label class="checkbox"><input id="f-reuse-port" type="checkbox" data-hint="Allow SO_REUSEPORT.">Reuse port </input></label>
+
+              <label class="checkbox"><input id="f-cont-batching" type="checkbox" checked data-hint="Enable continuous batching.">Continuous batching </input></label>
+
+              <label class="checkbox"><input id="f-webui" type="checkbox" checked data-hint="Enable the Web UI.">Enable Web UI </input></label>
+
+              <label class="checkbox"><input id="f-embedding" type="checkbox" data-hint="Serve as embeddings-only endpoint.">Embeddings only </input></label>
+
+              <label class="checkbox"><input id="f-rerank" type="checkbox" data-hint="Enable reranking endpoint.">Enable reranking </input></label>
+
+              <label class="checkbox"><input id="f-log-colors" type="checkbox" checked data-hint="Use colored log output.">Colored logs </input></label>
+
+              <label class="checkbox"><input id="f-log-prefix" type="checkbox" data-hint="Include log prefix.">Log prefix </input></label>
+
+              <label class="checkbox"><input id="f-log-timestamps" type="checkbox" data-hint="Include timestamps in logs.">Log timestamps </input></label>
+
+            </div>
+
+          </div>
+        </section>
+
+
+        <section class="arg-section advanced-only" id="sec-behavior">
+
+          <h2 class="section-header" onclick="toggleSection('behavior')">Generation &amp; Chat ▾</h2>
+
+          <div class="section-content">
+
+            <div class="field-group">
+
+              <label>Cache reuse <input id="f-cache-reuse" placeholder="0" type="text" data-hint="Reuse KV cache for repeated prompts."></input></label>
+
+              <label>Reverse prompt <input id="f-reverse-prompt" placeholder="text to halt on" type="text" data-hint="Text that, when generated, halts the model."></input></label>
+
+              <label>Reasoning budget <input id="f-reasoning-budget" placeholder="-1 = unlimited, 0 = off" type="text" data-hint="Token budget for reasoning steps (-1 = unlimited, 0 = off)."></input></label>
+
+              <label>LoRA adapter <input id="f-lora" placeholder="path/to/lora.gguf" type="text" data-hint="Path to LoRA adapter (.gguf)."></input></label>
+
+              <label>LoRA scale <input id="f-lora-scaled" placeholder="path:scale" type="text" data-hint="LoRA with scale (path:scale)."></input></label>
+
+              <label>Control vector <input id="f-control-vector" placeholder="path/to/vector" type="text" data-hint="Path to control vector."></input></label>
+
+              <label>Control vector layer <input id="f-control-vector-layer" placeholder="start end" type="text" data-hint="Layer range for control vector (start end)."></input></label>
+
+              <label>Control vector scale <input id="f-control-vector-scaled" placeholder="path:scale" type="text" data-hint="Control vector with scale (path:scale)."></input></label>
+
+            </div>
+
+            <div class="field-group">
+
+              <label>Chat template
+                <select id="f-chat-template" data-hint="Chat template to use (auto/chatml/llama3/...).">
+              <option value="auto"></option>
+              <option value="chatml">chatml</option>
+              <option value="llama3">llama3</option>
+              <option value="llama4">llama4</option>
+              <option value="mistral-v3">mistral-v3</option>
+              <option value="phi3">phi3</option>
+              <option value="vicuna">vicuna</option>
+              <option value="zephyr">zephyr</option>
+                </select>
+              </label>
+
+              <label>Reasoning
+                <select id="f-reasoning" data-hint="Reasoning mode (auto/on/off).">
+              <option value="auto"></option>
+              <option value="on">on</option>
+              <option value="off">off</option>
+                </select>
+              </label>
+
+              <label>Reasoning format
+                <select id="f-reasoning-format" data-hint="Format for reasoning tags (none/deepseek/...).">
+              <option value="auto"></option>
+              <option value="none">none</option>
+              <option value="deepseek">deepseek</option>
+              <option value="deepseek-legacy">deepseek-legacy</option>
+                </select>
+              </label>
+
+              <label>Flash attention
+                <select id="f-flash-att" data-hint="Flash attention (auto/on/off).">
+              <option value="auto">auto</option>
+              <option value="on">on</option>
+              <option value="off">off</option>
+                </select>
+              </label>
+
+              <label>Pooling
+                <select id="f-pooling" data-hint="Pooling mode for embeddings (auto/none/mean/cls/last/rank).">
+              <option value="auto"></option>
+              <option value="none">none</option>
+              <option value="mean">mean</option>
+              <option value="cls">cls</option>
+              <option value="last">last</option>
+              <option value="rank">rank</option>
+                </select>
+              </label>
+
+            </div>
+
+            <div class="field-group checkbox-group">
+
+              <label class="checkbox"><input id="f-warmup" type="checkbox" checked data-hint="Run warmup inference on startup.">Warmup </input></label>
+
+              <label class="checkbox"><input id="f-cache-prompt" type="checkbox" checked data-hint="Cache the prompt during generation.">Cache prompt </input></label>
+
+              <label class="checkbox"><input id="f-special" type="checkbox" data-hint="Use special tokens.">Special tokens </input></label>
+
+              <label class="checkbox"><input id="f-escape" type="checkbox" checked data-hint="Process escape sequences.">Escape sequences </input></label>
+
+              <label class="checkbox"><input id="f-mmproj-offload" type="checkbox" checked data-hint="Offload MMProj to CPU.">MMProj offload </input></label>
+
+              <label class="checkbox"><input id="f-mmproj-auto" type="checkbox" checked data-hint="Auto-detect MMProj.">MMProj auto </input></label>
+
+            </div>
+
+          </div>
+        </section>
+
+
+        <!-- Advanced settings (hidden by default) -->
+
+        <section class="arg-section advanced-only" id="sec-advanced">
+
+          <h2 class="section-header" onclick="toggleSection('advanced')">⚙ Advanced ▾</h2>
+
+          <div class="section-content">
+
+            <p class="section-note text-muted">Pick the speculative decoding mode in <em>Common Settings</em>; these tune the draft model.</p>
+
+            <div class="field-group">
+
+              <label>Draft n-min <input id="f-spec-draft-n-min" placeholder="0" type="text" data-hint="Minimum draft tokens."></input></label>
+
+              <label>Draft p-split <input id="f-spec-draft-p-split" placeholder="0.10" type="text" data-hint="Split probability for draft acceptance."></input></label>
+
+              <label>Draft p-min <input id="f-spec-draft-p-min" placeholder="0.75" type="text" data-hint="Minimum probability for draft."></input></label>
+
+              <label>Draft model <input id="f-spec-draft-model" placeholder="path/to/draft.gguf" type="text" data-hint="Path to draft model (.gguf)."></input></label>
+
+              <label>Draft hf repo <input id="f-spec-draft-hf" placeholder="user/repo" type="text" data-hint="HuggingFace repo for draft model."></input></label>
+
+              <label>Draft threads <input id="f-spec-draft-threads" placeholder="auto" type="text" data-hint="Threads for draft model."></input></label>
+
+              <label>Draft ctx size <input id="f-spec-draft-ctx-size" placeholder="0" type="text" data-hint="Context size for draft model."></input></label>
+
+              <label>Draft gpu layers <input id="f-spec-draft-ngl" placeholder="auto" type="text" data-hint="GPU layers for draft model."></input></label>
+
+              <label>Draft device <input id="f-spec-draft-device" placeholder="gpu0,gpu1" type="text" data-hint="Device IDs for draft model."></input></label>
+
+              <label>Replace target <input id="f-spec-replace" placeholder="TARGET DRAFT" type="text" data-hint="Token replacement pattern for draft."></input></label>
+
+              <label>Draft threads batch <input id="f-spec-draft-threads-batch" type="text" data-hint="Batch threads for draft."></input></label>
+
+              <label>Draft prio <input id="f-spec-draft-prio" type="text" data-hint="Priority for draft threads."></input></label>
+
+              <label>Draft poll <input id="f-spec-draft-poll" type="text" data-hint="Polling interval for draft."></input></label>
+
+              <label>CPU mask draft <input id="f-spec-draft-cpu-mask" type="text" data-hint="CPU mask for draft."></input></label>
+
+              <label>CPU range draft <input id="f-spec-draft-cpu-range" type="text" data-hint="CPU range for draft (lo-hi)."></input></label>
+
+              <label>CPU strict draft <input id="f-spec-draft-cpu-strict" type="number" data-hint="CPU strict mode for draft."></input></label>
+
+              <label>CPU mask batch draft <input id="f-spec-draft-cpu-mask-batch" type="text" data-hint="CPU mask for draft batch."></input></label>
+
+              <label>CPU strict batch draft <input id="f-spec-draft-cpu-strict-batch" type="number" data-hint="CPU strict for draft batch."></input></label>
+
+              <label>Prio batch draft <input id="f-spec-draft-prio-batch" type="text" data-hint="Priority for draft batch."></input></label>
+
+              <label>Poll batch draft <input id="f-spec-draft-poll-batch" type="text" data-hint="Poll interval for draft batch."></input></label>
+
+              <label>Draft override tensor <input id="f-spec-draft-override-tensor" type="text" data-hint="Override tensor for draft."></input></label>
+
+              <label>Draft CPU MoE <input id="f-spec-draft-cpu-moe" type="text" data-hint="CPU MoE for draft."></input></label>
+
+              <label>Draft n CPU MoE <input id="f-spec-draft-n-cpu-moe" type="number" data-hint="How many CPU cores for draft model MoE sub-layers."></input></label>
+
+            </div>
+
+            <div class="field-group">
+
+              <label>Draft cache type K
+                <select id="f-spec-draft-cache-type-k" data-hint="K cache type for draft.">
+              <option value="default"></option>
+              <option value="f16">f16</option>
+              <option value="f32">f32</option>
+              <option value="bf16">bf16</option>
+              <option value="q8_0">q8_0</option>
+              <option value="q4_0">q4_0</option>
+                </select>
+              </label>
+
+              <label>Draft cache type V
+                <select id="f-spec-draft-cache-type-v" data-hint="V cache type for draft.">
+              <option value="default"></option>
+              <option value="f16">f16</option>
+              <option value="f32">f32</option>
+              <option value="bf16">bf16</option>
+              <option value="q8_0">q8_0</option>
+              <option value="q4_0">q4_0</option>
+                </select>
+              </label>
+
+            </div>
+
+          </div>
+        </section>
+
+
+        <section class="arg-section advanced-only" id="sec-cpu">
+
+          <h2 class="section-header" onclick="toggleSection('cpu')">CPU ▾</h2>
+
+          <div class="section-content">
+
+            <div class="field-group">
+
+              <label>CPU mask <input id="f-cpu-mask" type="text" data-hint="Hex CPU mask for threading."></input></label>
+
+              <label>CPU range <input id="f-cpu-range" placeholder="lo-hi" type="text" data-hint="CPU range (lo-hi)."></input></label>
+
+              <label>CPU mask batch <input id="f-cpu-mask-batch" type="text" data-hint="CPU mask for batch processing."></input></label>
+
+              <label>CPU range batch <input id="f-cpu-range-batch" placeholder="lo-hi" type="text" data-hint="CPU range for batch (lo-hi)."></input></label>
+
+              <label>CPU MoE <input id="f-cpu-moe" placeholder="28" type="text" data-hint="CPU MoE cores."></input></label>
+
+            </div>
+
+            <div class="field-group">
+
+              <label>CPU strict
+                <select id="f-cpu-strict" data-hint="CPU strict mode (0=off, 1=on).">
+              <option value="0 - off">0</option>
+              <option value="1 - on">1</option>
+                </select>
+              </label>
+
+              <label>Prio
+                <select id="f-prio" data-hint="Process priority (-1=low, 0=normal, 1=medium, 2=high, 3=realtime).">
+              <option value="0 - normal">0</option>
+              <option value="-1 - low">-1</option>
+              <option value="1 - medium">1</option>
+              <option value="2 - high">2</option>
+              <option value="3 - realtime">3</option>
+                </select>
+              </label>
+
+              <label>Poll
+                <select id="f-poll" data-hint="Polling mode (50=default, 0=off, 1=on).">
+              <option value="50 - default">50</option>
+              <option value="0 - no polling">0</option>
+              <option value="1 - polling">1</option>
+                </select>
+              </label>
+
+              <label>CPU strict batch
+                <select id="f-cpu-strict-batch" data-hint="CPU strict for batch (0=off, 1=on).">
+              <option value="0 - off">0</option>
+              <option value="1 - on">1</option>
+                </select>
+              </label>
+
+              <label>Prio batch
+                <select id="f-prio-batch" data-hint="Priority for batch.">
+              <option value="0 - normal">0</option>
+              <option value="1 - medium">1</option>
+              <option value="2 - high">2</option>
+              <option value="3 - realtime">3</option>
+                </select>
+              </label>
+
+              <label>Poll batch
+                <select id="f-poll-batch" data-hint="Poll for batch.">
+              <option value="50 - default">50</option>
+              <option value="0 - no polling">0</option>
+              <option value="1 - polling">1</option>
+                </select>
+              </label>
+
+              <label>NUMA
+                <select id="f-numa" data-hint="NUMA policy (disabled/distribute/isolate/numactl).">
+              <option value="disabled"></option>
+              <option value="distribute">distribute</option>
+              <option value="isolate">isolate</option>
+              <option value="numactl">numactl</option>
+                </select>
+              </label>
+
+            </div>
+
+            <div class="field-group checkbox-group">
+
+              <label class="checkbox"><input id="f-offline" type="checkbox" data-hint="Run offline (no HF downloads).">Offline </input></label>
+
+              <label class="checkbox"><input id="f-no-host" type="checkbox" data-hint="Bypass host buffer.">Bypass host buffer </input></label>
+
+            </div>
+
+          </div>
+        </section>
+
+
+        <section class="arg-section advanced-only" id="sec-special">
+
+          <h2 class="section-header" onclick="toggleSection('special')">Special ▾</h2>
+
+          <div class="section-content">
+
+            <div class="field-group">
+
+              <label>Lookup cache static <input id="f-lookup-cache-static" placeholder="path" type="text" data-hint="Static lookup cache path."></input></label>
+
+              <label>Lookup cache dynamic <input id="f-lookup-cache-dynamic" placeholder="path" type="text" data-hint="Dynamic lookup cache path."></input></label>
+
+              <label>Context checkpoints <input id="f-ctx-checkpoints" placeholder="32" type="text" data-hint="Number of context checkpoints."></input></label>
+
+              <label>MMproj URL <input id="f-mmproj-url" placeholder="https://..." type="text" data-hint="URL for MMProj download."></input></label>
+
+              <label>Image min tokens <input id="f-image-min-tokens" type="number" data-hint="Minimum tokens for image processing."></input></label>
+
+              <label>Image max tokens <input id="f-image-max-tokens" type="number" data-hint="Maximum tokens for image processing."></input></label>
+
+              <label>Hugging Face repo <input id="f-hf-repo" placeholder="user/repo" type="text" data-hint="HuggingFace repository (user/repo)."></input></label>
+
+              <label>Hugging Face file <input id="f-hf-file" placeholder="filename.gguf" type="text" data-hint="HuggingFace model file."></input></label>
+
+              <label>Hugging Face token <input id="f-hf-token" placeholder="hf_..." type="text" data-hint="HuggingFace API token."></input></label>
+
+              <label>HF repo vocoder <input id="f-hf-repo-v" placeholder="user/repo" type="text" data-hint="HuggingFace repo for vocoder."></input></label>
+
+              <label>HF file vocoder <input id="f-hf-file-v" placeholder="filename.gguf" type="text" data-hint="HuggingFace file for vocoder."></input></label>
+
+              <label>Log file <input id="f-log-file" placeholder="path/to/log.txt" type="text" data-hint="Path to log file."></input></label>
+
+              <label>WebUI config JSON <input id="f-webui-config" placeholder="{"key":"value"}" type="text" data-hint="WebUI config JSON."></input></label>
+
+              <label>WebUI config file <input id="f-webui-config-file" placeholder="path/to/config.json" type="text" data-hint="WebUI config file path."></input></label>
+
+              <label>Tools <input id="f-tools" placeholder="read_file,grep_search" type="text" data-hint="Tools to enable (comma-separated)."></input></label>
+
+              <label>Chat template kwargs <input id="f-chat-template-kwargs" placeholder="{"key":"value"}" type="text" data-hint="Chat template kwargs JSON."></input></label>
+
+              <label>Reasoning budget message <input id="f-reasoning-budget-message" placeholder="text" type="text" data-hint="Message for reasoning budget."></input></label>
+
+              <label>Override KV <input id="f-override-kv" placeholder="key=type:value" type="text" data-hint="Override KV (key=type:value)."></input></label>
+
+              <label>Verbosity <input id="f-verbosity" placeholder="3" type="number" data-hint="Verbosity level."></input></label>
+
+            </div>
+
+            <div class="field-group checkbox-group">
+
+              <label class="checkbox"><input id="f-webui-mcp" type="checkbox" data-hint="Enable WebUI MCP proxy.">WebUI MCP proxy </input></label>
+
+              <label class="checkbox"><input id="f-op-offload" type="checkbox" checked data-hint="Offload ops to GPU.">Op offload </input></label>
+
+              <label class="checkbox"><input id="f-perf" type="checkbox" data-hint="Enable performance counters.">Performance counters </input></label>
+
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+
+    <!-- Live preview -->
+
+    <section id="preview-section">
+
+      <h2>Generated Command</h2>
+
+      <pre id="preview-output"><code class="text-muted">Loading...</code></pre>
+
+    </section>
+
+
+    <!-- Fixed bottom bar -->
+
+    <footer class="bottom-bar">
+
+      <button id="btn-save" class="btn btn-primary">✟ Save to args.txt</button>
+
+      <button id="btn-start" class="btn btn-green">▶ Start Server</button>
+
+      <button id="btn-stop" class="btn btn-red" disabled>⏹ Stop Server</button>
+
+      <span id="status-text" class="status">Ready</span>
+
+    </footer>
+
+  </div>
+
+
+  <!-- Folder browser modal -->
+
+  <div id="browser-modal" class="modal" hidden>
+
+    <div class="modal-backdrop"></div>
+
+    <div class="modal-panel">
+
+      <div class="modal-header">
+
+        <h3>Choose model folder</h3>
+
+        <button id="btn-browser-close" class="modal-close" title="Close">✕</button>
+
+      </div>
+
+      <div class="browser-path-row">
+
+        <button id="btn-browser-up" title="Up one level">▲</button>
+
+        <button id="btn-browser-drives" title="Show drives">Drive</button>
+
+        <input id="browser-path" type="text" placeholder="Current path">
+
+        <button id="btn-browser-go" title="Go">Go</button>
+
+      </div>
+
+      <div id="browser-list" class="browser-list">
+
+        <div class="browser-empty">Loading...</div>
+
+      </div>
+
+      <div class="modal-footer">
+
+        <span id="browser-status" class="text-muted"></span>
+
+        <div class="spacer"></div>
+
+        <button id="btn-browser-cancel">Cancel</button>
+
+        <button id="btn-browser-select" class="btn-primary">Use this folder</button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <script src="/app.js"></script>
+
+</body>
+
+</html>
