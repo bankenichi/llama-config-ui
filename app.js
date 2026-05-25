@@ -420,12 +420,14 @@ async function updateStatus() {
     if (data.running) {
       btnStop.disabled = false;
       btnStart.disabled = true;
+      document.getElementById('btn-opencode').disabled = false;
       statusText.textContent = `Running (PID ${data.pid})`;
       statusText.className = 'status running';
       statusText.innerHTML = '<span class="status-dot running"></span>Running (PID ' + data.pid + ')';
     } else {
       btnStop.disabled = true;
       btnStart.disabled = false;
+      document.getElementById('btn-opencode').disabled = true;
       statusText.textContent = 'Stopped';
       statusText.className = 'status stopped';
     }
@@ -790,6 +792,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-start').addEventListener('click', startServer);
   document.getElementById('btn-stop').addEventListener('click', stopServer);
+  document.getElementById('btn-opencode').addEventListener('click', async () => {
+    try {
+      await api('/api/opencode', { method: 'POST' });
+      toast('Opencode launched', 'success');
+    } catch (e) {
+      toast('Failed to launch: ' + e.message, 'error');
+    }
+  });
 
   // Periodic status refresh
   setInterval(updateStatus, 10000);

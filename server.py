@@ -4,6 +4,7 @@
 import json
 import os
 import re
+import socket
 import string
 import subprocess
 import sys
@@ -12,11 +13,26 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs, unquote
 
-BASE = Path(__file__).resolve().parent.parent
+# ── Paths ──────────────────────────────────────────────────────────────────
+# Where the UI files live (this folder)
 STATIC_BASE = Path(__file__).resolve().parent
-ARGS_FILE = BASE / "llama-args.txt"
-PROFILE_FILE = BASE / "profiles.json"
-PID_FILE = BASE / "server.pid"
+
+# Where the llama.cpp install is. Override with LLAMACPP_DIR env var if needed.
+LLAMACPP_DIR = Path(os.environ.get("LLAMACPP_DIR", r"C:\Program Files\llamacpp"))
+
+# Treat the llama.cpp dir as BASE for arg-file purposes — that's where the
+# binary reads its config from.
+BASE = LLAMACPP_DIR
+ARGS_FILE = LLAMACPP_DIR / "llama-args.txt"
+RUN_SCRIPT = LLAMACPP_DIR / "run-llama.ps1"
+
+# Per-UI state lives alongside the UI files, not in the install dir.
+PROFILE_FILE = STATIC_BASE / "profiles.json"
+PID_FILE = STATIC_BASE / "server.pid"
+
+# Where opencode opens by default (user's home — adjust if you want it
+# scoped to a specific project dir).
+OPENCODE_CWD = Path.home()
 
 
 # ── arg parsing ──────────────────────────────────────────────────────────────
@@ -195,31 +211,80 @@ def save_profiles(profiles: dict):
 
 # ── process management ───────────────────────────────────────────────────────
 
+# Windows CreateProcess flag — gives the child its own console window
+# so the user sees the llama-server / opencode output instead of having
+# the process run invisibly in the background.
+CREATE_NEW_CONSOLE = 0x00000010
+
+
+def _spawn_in_new_console(cmd, cwd=None, title=None):
+    """Spawn `cmd` in a brand-new visible console window on Windows."""
+    if os.name == "nt":
+        # Do NOT use 'cmd /c start'. CREATE_NEW_CONSOLE natively opens a new 
+        # terminal window and preserves the true PID of the child process.
+        return subprocess.Popen(
+            cmd,
+            cwd=str(cwd) if cwd else None,
+            creationflags=CREATE_NEW_CONSOLE,
+        )
+    return subprocess.Popen(cmd, cwd=str(cwd) if cwd else None)
+
+
 def start_server():
-    """Launch run-llama.ps1 and return the PID."""
-    script = BASE / "run-llama.ps1"
-    full_path = os.path.abspath(str(script))
-    proc = subprocess.Popen(
-        ["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", full_path],
-        cwd=str(BASE),
-    )
+    """Launch run-llama.ps1 in its own visible console window."""
+    if not RUN_SCRIPT.exists():
+        raise FileNotFoundError(f"run-llama.ps1 not found at {RUN_SCRIPT}")
+
+    cmd = ["powershell.exe", "-NoExit", "-NoProfile",
+           "-ExecutionPolicy", "Bypass", "-File", str(RUN_SCRIPT)]
+    proc = _spawn_in_new_console(cmd, cwd=LLAMACPP_DIR, title="llama-server")
     PID_FILE.write_text(str(proc.pid))
     return proc.pid
 
 
 def stop_server():
-    """Kill the process stored in server.pid."""
+    """Kill the recorded PID and the entire process tree below it
+    (powershell + the llama-server child it spawned)."""
     if not PID_FILE.exists():
         return False
     pid = PID_FILE.read_text().strip()
     if not pid:
         return False
     try:
-        subprocess.run(["taskkill", "/F", "/PID", pid], check=False)
+        # /T kills the whole tree so the powershell launcher AND llama-server die
+        subprocess.run(["taskkill", "/F", "/T", "/PID", pid], check=False)
     except Exception:
         pass
     PID_FILE.unlink(missing_ok=True)
     return True
+
+
+def launch_opencode():
+    """Open a new terminal window running `opencode` in the user's home."""
+    cmd = ["cmd", "/k", "opencode"]
+    _spawn_in_new_console(cmd, cwd=OPENCODE_CWD, title="opencode")
+    return True
+
+
+# ── readiness probe ─────────────────────────────────────────────────────────
+
+def _parse_port_from_args(default=8080):
+    """Pluck --port from llama-args.txt so /api/status can probe it."""
+    try:
+        args = parse_args_file(ARGS_FILE)
+        return int(args.get("port", default))
+    except Exception:
+        return default
+
+
+def llama_server_ready(host="127.0.0.1", timeout=0.25) -> bool:
+    """True if something is accepting TCP on the llama-server port."""
+    port = _parse_port_from_args()
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
 
 
 # ── model & folder discovery ────────────────────────────────────────────────
@@ -350,7 +415,13 @@ class APIHandler(BaseHTTPRequestHandler):
             self._json(200, browse_dir(directory))
         elif path == "/api/status":
             pid = PID_FILE.read_text().strip() if PID_FILE.exists() else ""
-            self._json(200, {"running": bool(pid), "pid": pid})
+            ready = bool(pid) and llama_server_ready()
+            self._json(200, {
+                "running": bool(pid),
+                "ready": ready,
+                "pid": pid,
+                "port": _parse_port_from_args(),
+            })
         elif path == "/api/current-dir":
             self._json(200, {"dir": str(BASE)})
         elif path == "/style.css":
@@ -373,12 +444,22 @@ class APIHandler(BaseHTTPRequestHandler):
             self._json(200, {"ok": True, "line": line})
 
         elif path == "/api/start":
-            pid = start_server()
-            self._json(200, {"ok": True, "pid": pid})
+            try:
+                pid = start_server()
+                self._json(200, {"ok": True, "pid": pid})
+            except Exception as e:
+                self._json(500, {"error": str(e)})
 
         elif path == "/api/stop":
             ok = stop_server()
             self._json(200, {"ok": ok})
+
+        elif path == "/api/opencode": # <-- Changed from /api/launch-opencode
+            try:
+                launch_opencode()
+                self._json(200, {"ok": True})
+            except Exception as e:
+                self._json(500, {"error": str(e)})
 
         elif path == "/api/profiles":
             data = json.loads(body) if body else {}

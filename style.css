@@ -163,6 +163,16 @@ button.btn-red:hover {
   background: var(--error-hover);
 }
 
+button.btn-amber {
+  background: var(--warning);
+  border-color: var(--warning);
+  color: #000;
+}
+
+button.btn-amber:hover {
+  background: #fbbf24;
+}
+
 button#btn-new-profile {
   width: 28px;
   height: 28px;
