@@ -80,10 +80,12 @@ Profiles are named bundles of flags stored in `profiles.json`. Save the current 
 
 ## Server control
 
-- **▶ Start Server** runs `run-llama.ps1` in the `llamacpp` directory via PowerShell, records the PID in `server.pid`.
-- **⏹ Stop Server** reads that PID and runs `taskkill /F /PID …`.
+## Server control
+
+- **▶ Start Server** spawns a brand new, detached PowerShell console exclusively running `run-llama.ps1`, and records its true PID in `server.pid`.
+- **⏹ Stop Server** reads that PID and runs `taskkill /F /T /PID …` to kill the terminal window and the server process tree.
 - The status pill polls `/api/status` every 10 s.
-- **Launch Opencode** runs Opencode and launches it into a separate terminal.
+- **Launch Opencode** spawns an independent command prompt window running the `opencode` CLI.
 
 This is intentionally minimal — it doesn't capture stdout or restart on crash. For long-running production setups you'd want something heavier.
 
@@ -96,8 +98,9 @@ All endpoints return JSON. All paths are loopback only.
 | GET      | `/api/args`                           | Parsed `llama-args.txt` as `{arg-name: value}`            |
 | POST     | `/api/save`                           | Body = arg dict; writes `llama-args.txt`                  |
 | GET      | `/api/status`                         | `{running, pid}`                                          |
-| POST     | `/api/start`                          | Launches `run-llama.ps1`                                  |
+| POST     | `/api/start`                          | Launches `run-llama.ps1` in a new terminal                |
 | POST     | `/api/stop`                           | Kills the recorded PID                                    |
+| POST     | `/api/opencode`                       | Launches `opencode` in a new terminal                     |
 | GET      | `/api/profiles`                       | All profiles                                              |
 | POST     | `/api/profiles`                       | `{name, args}` — save / overwrite profile                 |
 | GET      | `/api/profiles/<name>`                | One profile (`{ok, args, profile}`)                       |
