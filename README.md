@@ -6,17 +6,33 @@ It runs entirely on `127.0.0.1`, talks to a small Python stdlib HTTP server, and
 
 It won't create the file if its not already there. And it won't create the .ps1 either, as this was made for use with my **[Homelab Deployment](https://github.com/bankenichi/Homelab-Deployment)** stack. However you can easily create the an empty `llama-args.txt` file and after selecting your flags it should be able to save them. As for the run-llama.ps1 file...
 
-Paste this into a file and save it as run-llama.ps1 copy-paste that file into your llamacpp folder (by default the scripts in this repo assume it to be in C:/Program Files/llamacpp, further modifications might be required if you install it elsewhere):
+Paste this into a file and save it as run-llama.ps1 copy-paste that file into your llamacpp folder. The UI locates that folder by reading the `LLAMACPP_ROOT` environment variable (with `LLAMACPP_DIR` accepted as a legacy fallback); if neither is set it falls back to `C:\Program Files\llamacpp`. If you've installed llamacpp elsewhere, set the env var at User or Machine scope rather than editing this repo — the Homelab Deploy script does this automatically.
 
 ```
-$exePath = "Path to your llama-server.exe"
-$argsFile = "Path to your llama-args.txt"
+$exePath = "$env:LLAMACPP_ROOT\llama-server.exe"
+$argsFile = "$env:LLAMACPP_ROOT\llama-args.txt"
 if (!(Test-Path $argsFile)) { Write-Error "Config not found: $argsFile"; exit 1 }
 $argsText = (Get-Content $argsFile -Raw).Trim()
 $argsList = [regex]::Matches($argsText, '(?:"[^"]*"|[^\s]+)') | ForEach-Object { $_.Value }
 Write-Host "Booting llama-server..." -ForegroundColor Cyan
 & $exePath @argsList
 ```
+
+## Configuration
+
+The UI needs to know where your llama.cpp install lives. It resolves this in the following order:
+
+1. **`LLAMACPP_ROOT`** environment variable — the preferred name, matches what the Homelab Deploy script publishes at machine scope.
+2. **`LLAMACPP_DIR`** environment variable — legacy name, still honored so standalone setups using the old convention keep working.
+3. **`C:\Program Files\llamacpp`** — hardcoded default if neither env var is set.
+
+To override the default in a standalone install (no Homelab Deploy script), open an Administrator PowerShell and run:
+
+```powershell
+[Environment]::SetEnvironmentVariable("LLAMACPP_ROOT", "D:\AI\llamacpp", [EnvironmentVariableTarget]::Machine)
+```
+
+Then open a fresh terminal before launching the UI. The same path becomes the working directory when "▶ Start Server" spawns `run-llama.ps1`, so the binary, args file, and weights all need to live there together.
 
 ## Quick start
 
