@@ -527,4 +527,14 @@ class APIHandler(BaseHTTPRequestHandler):
         pass
 
 
-# ── main ──────────────────────�
+# ── main ─────────────────────────────────────────────────────────────────────
+
+def main(port=8082):
+    server = HTTPServer(("127.0.0.1", port), APIHandler)
+    print(f"Llama Config UI -> http://127.0.0.1:{port}")
+    server.serve_forever()
+
+
+if __name__ == "__main__":
+    port = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 8082
+    main(port)
