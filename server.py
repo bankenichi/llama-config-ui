@@ -17,14 +17,23 @@ from urllib.parse import urlparse, parse_qs, unquote
 # Where the UI files live (this folder)
 STATIC_BASE = Path(__file__).resolve().parent
 
-# Where the llama.cpp install is. Override with LLAMACPP_DIR env var if needed.
-LLAMACPP_DIR = Path(os.environ.get("LLAMACPP_DIR", r"C:\Program Files\llamacpp"))
+# Where the llama.cpp install is. Resolution order:
+#   1. LLAMACPP_ROOT env var (set at machine scope by the Homelab Deploy-Homelab.ps1 script,
+#      and the recommended way to override the install location)
+#   2. LLAMACPP_DIR env var (legacy name, kept for backward compatibility with older
+#      standalone setups; new deployments should use LLAMACPP_ROOT)
+#   3. C:\Program Files\llamacpp (hardcoded default — matches the deploy script's default)
+LLAMACPP_ROOT = Path(
+    os.environ.get("LLAMACPP_ROOT")
+    or os.environ.get("LLAMACPP_DIR")
+    or r"C:\Program Files\llamacpp"
+)
 
 # Treat the llama.cpp dir as BASE for arg-file purposes — that's where the
 # binary reads its config from.
-BASE = LLAMACPP_DIR
-ARGS_FILE = LLAMACPP_DIR / "llama-args.txt"
-RUN_SCRIPT = LLAMACPP_DIR / "run-llama.ps1"
+BASE = LLAMACPP_ROOT
+ARGS_FILE = LLAMACPP_ROOT / "llama-args.txt"
+RUN_SCRIPT = LLAMACPP_ROOT / "run-llama.ps1"
 
 # Per-UI state lives alongside the UI files, not in the install dir.
 PROFILE_FILE = STATIC_BASE / "profiles.json"
@@ -237,7 +246,7 @@ def start_server():
 
     cmd = ["powershell.exe", "-NoExit", "-NoProfile",
            "-ExecutionPolicy", "Bypass", "-File", str(RUN_SCRIPT)]
-    proc = _spawn_in_new_console(cmd, cwd=LLAMACPP_DIR, title="llama-server")
+    proc = _spawn_in_new_console(cmd, cwd=LLAMACPP_ROOT, title="llama-server")
     PID_FILE.write_text(str(proc.pid))
     return proc.pid
 
