@@ -6,6 +6,16 @@
       "preset": "standard",
       "overrides": {}
     },
+    "Ternary 64K DSpark + Vision": {
+      "stack": "ternary",
+      "preset": "64k",
+      "overrides": {}
+    },
+    "Ternary 128K DSpark + Vision": {
+      "stack": "ternary",
+      "preset": "128k",
+      "overrides": {}
+    },
     "Ternary Target + Vision": {
       "stack": "ternary",
       "preset": "target-only",

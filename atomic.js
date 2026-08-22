@@ -166,7 +166,7 @@ function updateAtomicApplicability(config = null) {
   atomicEl('atomic-draft-max').max = ternary ? 16 : 64;
 
   const notes = {
-    ternary: 'DSpark uses the matching sidecar, lossless q8_0/q8_0 draft KV, four draft tokens by default, at most 16 draft slots, and a runtime-enforced 4096 positions per parallel slot. Target-derived image features keep drafting available for image answers and retained-image follow-ups.',
+    ternary: 'DSpark uses the matching sidecar and lossless q8_0/q8_0 draft KV. Validated tiers are 32K turbo3/turbo3 depth 4, 64K turbo3/turbo2 depth 3, and 128K turbo3/turbo3 depth 4. The runtime enforces 4096 draft positions per parallel slot, and target-derived image features keep drafting available for image answers and retained-image follow-ups.',
     qwen: 'NextN is embedded in the target GGUF and uses synchronous multi-step drafting. Leave the draft path empty. Target KV is turbo4/turbo3; the small draft context uses lossless q8_0/q8_0.',
     gemma26: 'The standard profile is target-only. Select the MTP preset to load the external assistant head. With vision configured, the media-aware MTP path can draft image answers and retained-image follow-ups.',
     gemma12: 'This dense model has no configured assistant head. Vision remains available; speculative controls are disabled.',

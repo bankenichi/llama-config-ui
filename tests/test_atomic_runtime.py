@@ -64,6 +64,13 @@ class AtomicLauncherTests(unittest.TestCase):
 
 
 class AtomicProfileTests(unittest.TestCase):
+    def test_shipped_profiles_include_validated_ternary_context_tiers(self):
+        defaults = Path(__file__).resolve().parents[1] / "atomic-profiles.defaults.json"
+        profiles = json.loads(defaults.read_text(encoding="utf-8"))["profiles"]
+        self.assertEqual(profiles["Ternary DSpark + Vision"]["preset"], "standard")
+        self.assertEqual(profiles["Ternary 64K DSpark + Vision"]["preset"], "64k")
+        self.assertEqual(profiles["Ternary 128K DSpark + Vision"]["preset"], "128k")
+
     def test_store_separates_starter_and_user_profiles(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

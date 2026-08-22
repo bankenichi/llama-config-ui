@@ -29,10 +29,14 @@ only displaying a larger list of flags:
 
 | Stack | Draft topology | Normal target KV | Vision |
 |---|---|---|---|
-| Ternary Bonsai 27B | Prism DSpark sidecar, `draft-dspark`, q8_0 K/V | turbo4 K / turbo3 V | Matching Bonsai mmproj |
+| Ternary Bonsai 27B | Prism DSpark sidecar, `draft-dspark`, q8_0 K/V | tiered: 32K turbo3/turbo3; 64K turbo3/turbo2; 128K turbo3/turbo3 | Matching Bonsai mmproj |
 | Qwen 3.6 35B-A3B | Embedded synchronous NextN, `draft-mtp` | turbo4 K / turbo3 V | Matching Qwen mmproj |
 | Gemma 4 26B-A4B | Optional external assistant, `draft-mtp` | turbo4 K / turbo2 V | Matching Gemma mmproj |
 | Gemma 4 12B dense | Target-only | q8_0 K / q8_0 V | Encoder-free Gemma projector |
+
+The shipped Ternary profiles name the owner's Hikari07jp abliterated
+low-degradation target. DSpark, the multimodal projector, and their implementation
+provenance remain Prism ML artifacts; the UI does not claim authorship of them.
 
 For each stack the UI handles:
 
@@ -133,7 +137,15 @@ in ignored `atomic-profiles.json`, so local model paths and tuning do not enter 
 
 ### Ternary profiles
 
-- **Ternary DSpark + Vision** is the normal integrated path.
+- **Ternary DSpark + Vision** is the normal 32K integrated path: target
+  `turbo3`/`turbo3`, DSpark depth 4.
+- **Ternary 64K DSpark + Vision** uses target `turbo3`/`turbo2` and DSpark depth
+  3. Near-full confirmation improved median measured decode by 7.0% over the
+  same-depth `turbo4`/`turbo3` reference while preserving text, retrieval, and
+  vision gates.
+- **Ternary 128K DSpark + Vision** uses target `turbo3`/`turbo3` and DSpark depth
+  4. Near-full confirmation improved median measured decode by 8.3% and reduced
+  dedicated VRAM relative to `turbo4`/`turbo3`.
 - **Ternary Target + Vision** isolates target/mmproj behavior without DSpark.
 - **Ternary DSpark Text** isolates speculative text generation without loading the
   projector.
