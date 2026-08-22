@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "profiles": {
+    "Ternary DSpark + Vision": {
+      "stack": "ternary",
+      "preset": "standard",
+      "overrides": {}
+    },
+    "Ternary Target + Vision": {
+      "stack": "ternary",
+      "preset": "target-only",
+      "overrides": {}
+    },
+    "Ternary DSpark Text": {
+      "stack": "ternary",
+      "preset": "text-only",
+      "overrides": {}
+    },
+    "Ternary Target Full-f16 Diagnostic": {
+      "stack": "ternary",
+      "preset": "full-f16",
+      "overrides": {}
+    },
+    "Qwen NextN Daily": {
+      "stack": "qwen",
+      "preset": "standard",
+      "overrides": {}
+    },
+    "Qwen Target-only": {
+      "stack": "qwen",
+      "preset": "target-only",
+      "overrides": {}
+    },
+    "Gemma 4 Daily": {
+      "stack": "gemma26",
+      "preset": "standard",
+      "overrides": {}
+    },
+    "Gemma 4 MTP": {
+      "stack": "gemma26",
+      "preset": "mtp",
+      "overrides": {}
+    },
+    "Gemma 4 12B Vision": {
+      "stack": "gemma12",
+      "preset": "standard",
+      "overrides": {}
+    }
+  }
+}

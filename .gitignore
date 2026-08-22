@@ -1,2 +1,7 @@
 __pycache__/
 server.pid
+atomic-profiles.json
+atomic-active-config.json
+atomic-server.log
+atomic-server.pid
+atomic-diagnostics.json

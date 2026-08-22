@@ -13,6 +13,14 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs, unquote
 
+from atomic_runtime import (
+    AtomicLauncher,
+    AtomicLauncherError,
+    AtomicProcessManager,
+    AtomicProfileStore,
+    infer_atomic_root,
+)
+
 # ── Paths ──────────────────────────────────────────────────────────────────
 # Where the UI files live (this folder)
 STATIC_BASE = Path(__file__).resolve().parent
@@ -38,6 +46,17 @@ RUN_SCRIPT = LLAMACPP_ROOT / "run-llama.ps1"
 # Per-UI state lives alongside the UI files, not in the install dir.
 PROFILE_FILE = STATIC_BASE / "profiles.json"
 PID_FILE = STATIC_BASE / "server.pid"
+
+# Atomic mode is deliberately separate from the legacy llama-args.txt workflow.
+# Both interfaces remain available, but only Atomic mode understands the fork's
+# model-stack invariants, environment gates, and managed diagnostics.
+ATOMIC_ROOT = Path(os.environ.get("ATOMIC_LLAMA_ROOT") or infer_atomic_root(STATIC_BASE))
+ATOMIC_LAUNCHER = AtomicLauncher(ATOMIC_ROOT)
+ATOMIC_PROFILES = AtomicProfileStore(
+    STATIC_BASE / "atomic-profiles.defaults.json",
+    STATIC_BASE / "atomic-profiles.json",
+)
+ATOMIC_MANAGER = AtomicProcessManager(ATOMIC_LAUNCHER, STATIC_BASE)
 
 # Where opencode opens by default (user's home — adjust if you want it
 # scoped to a specific project dir).
@@ -78,10 +97,12 @@ SHORT_TO_LONG = {
     "lv":  "log-verbosity",
     "j":   "json-schema",
     "jf":  "json-schema-file",
-    "td":  "threads-draft",
-    "tbd": "threads-batch-draft",
-    "cd":  "ctx-size-draft",
-    "ngld":"n-gpu-layers-draft",
+    "td":  "spec-draft-threads",
+    "tbd": "spec-draft-threads-batch",
+    "ngld":"spec-draft-ngl",
+    "ctkd":"spec-draft-type-k",
+    "ctvd":"spec-draft-type-v",
+    "md":  "spec-draft-model",
 }
 
 
@@ -433,10 +454,43 @@ class APIHandler(BaseHTTPRequestHandler):
             })
         elif path == "/api/current-dir":
             self._json(200, {"dir": str(BASE)})
+        elif path == "/api/atomic/describe":
+            try:
+                description = ATOMIC_LAUNCHER.invoke("Describe", "ternary", "standard")
+                description["profiles"] = ATOMIC_PROFILES.load()
+                description["paths"] = {
+                    "atomic_root": str(ATOMIC_ROOT),
+                    "launcher": str(ATOMIC_LAUNCHER.launcher_path),
+                    "legacy_profiles": str(Path(r"C:\Program Files\llamacpp\llama-config-ui\profiles.json")),
+                }
+                self._json(200, description)
+            except Exception as exc:
+                self._json(500, {"error": str(exc)})
+        elif path == "/api/atomic/profiles":
+            try:
+                self._json(200, ATOMIC_PROFILES.load())
+            except Exception as exc:
+                self._json(500, {"error": str(exc)})
+        elif path == "/api/atomic/status":
+            self._json(200, ATOMIC_MANAGER.status())
+        elif path == "/api/atomic/logs":
+            try:
+                lines = int(self._query().get("lines", ["250"])[0])
+            except ValueError:
+                lines = 250
+            self._json(200, ATOMIC_MANAGER.logs(lines))
+        elif path == "/api/atomic/metrics":
+            self._json(200, ATOMIC_MANAGER.metrics())
+        elif path == "/api/atomic/diagnostics":
+            self._json(200, ATOMIC_MANAGER.diagnostics())
         elif path == "/style.css":
             self._serve("style.css", "text/css")
         elif path == "/app.js":
             self._serve("app.js", "application/javascript")
+        elif path == "/atomic.css":
+            self._serve("atomic.css", "text/css")
+        elif path == "/atomic.js":
+            self._serve("atomic.js", "application/javascript")
         else:
             self._json(404, {"error": "not found"})
 
@@ -487,6 +541,57 @@ class APIHandler(BaseHTTPRequestHandler):
             else:
                 self._json(404, {"error": "profile not found"})
 
+        elif path == "/api/atomic/preview":
+            try:
+                data = json.loads(body) if body else {}
+                result = ATOMIC_MANAGER.preview(
+                    data.get("stack", "ternary"),
+                    data.get("preset", "standard"),
+                    data.get("overrides", {}),
+                )
+                self._json(200, result)
+            except Exception as exc:
+                self._json(400, {"error": str(exc)})
+
+        elif path == "/api/atomic/start":
+            try:
+                data = json.loads(body) if body else {}
+                result = ATOMIC_MANAGER.start(
+                    data.get("stack", "ternary"),
+                    data.get("preset", "standard"),
+                    data.get("overrides", {}),
+                )
+                self._json(200, result)
+            except Exception as exc:
+                self._json(400, {"error": str(exc)})
+
+        elif path == "/api/atomic/stop":
+            try:
+                data = json.loads(body) if body else {}
+                timeout = float(data.get("timeout", 10.0))
+                self._json(200, ATOMIC_MANAGER.stop(timeout=timeout))
+            except Exception as exc:
+                self._json(500, {"error": str(exc)})
+
+        elif path == "/api/atomic/profiles":
+            try:
+                data = json.loads(body) if body else {}
+                name = str(data.get("name", "")).strip()
+                profile = data.get("profile", {})
+                ATOMIC_PROFILES.save(name, profile)
+                self._json(200, ATOMIC_PROFILES.load())
+            except Exception as exc:
+                self._json(400, {"error": str(exc)})
+
+        elif path == "/api/atomic/import-legacy":
+            try:
+                data = json.loads(body) if body else {}
+                source = Path(data.get("source") or r"C:\Program Files\llamacpp\llama-config-ui\profiles.json")
+                migrated = ATOMIC_PROFILES.import_legacy(source)
+                self._json(200, {"ok": True, "imported": migrated, "profiles": ATOMIC_PROFILES.load()})
+            except Exception as exc:
+                self._json(400, {"error": str(exc)})
+
         else:
             self._json(404, {"error": "not found"})
 
@@ -494,7 +599,16 @@ class APIHandler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         path = self.path.split("?")[0]
-        if path.startswith("/api/profiles/"):
+        if path.startswith("/api/atomic/profiles/"):
+            name = unquote(path.split("/api/atomic/profiles/", 1)[1].split("/")[0])
+            try:
+                ATOMIC_PROFILES.delete(name)
+                self._json(200, ATOMIC_PROFILES.load())
+            except KeyError:
+                self._json(404, {"error": "profile not found or read-only"})
+            except Exception as exc:
+                self._json(400, {"error": str(exc)})
+        elif path.startswith("/api/profiles/"):
             name = path.split("/api/profiles/", 1)[1].split("/")[0]
             name = unquote(name)
             profiles = load_profiles()

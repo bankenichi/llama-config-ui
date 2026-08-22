@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Llama Server Config</title>
   <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/atomic.css">
 </head>
 <body>
   <div id="app">
@@ -22,6 +23,101 @@
     </header>
 
     <main>
+      <section id="atomic-runtime" class="atomic-panel">
+        <div class="atomic-heading">
+          <div>
+            <span class="atomic-kicker">Atomic fork control plane</span>
+            <h2>Gemma, Qwen NextN, and Ternary DSpark</h2>
+            <p>Validated through the canonical launcher in the Atomic worktree. Vision stays configured during text speculation; real media turns use the runtime's safe target/rebuild path.</p>
+          </div>
+          <div id="atomic-state" class="atomic-state" data-state="loading">Loading capabilities</div>
+        </div>
+
+        <div class="atomic-toolbar">
+          <label>Profile
+            <select id="atomic-profile"><option value="">Custom configuration</option></select>
+          </label>
+          <button id="atomic-profile-save" type="button">Save profile</button>
+          <button id="atomic-profile-delete" type="button">Delete profile</button>
+          <button id="atomic-import-legacy" type="button">Import Program Files profiles</button>
+          <button id="atomic-refresh" type="button">Refresh capabilities</button>
+        </div>
+
+        <div class="atomic-grid atomic-grid-primary">
+          <label>Model stack
+            <select id="atomic-stack">
+              <option value="ternary">Ternary Bonsai 27B</option>
+              <option value="qwen">Qwen 3.6 35B-A3B NextN</option>
+              <option value="gemma26">Gemma 4 26B-A4B</option>
+              <option value="gemma12">Gemma 4 12B dense</option>
+            </select>
+          </label>
+          <label>Preset
+            <select id="atomic-preset"></select>
+          </label>
+          <label>Server port <input id="atomic-port" type="number" min="1" max="65535" value="8081"></label>
+          <label>Context size <input id="atomic-ctx-size" type="number" min="0" placeholder="profile default"></label>
+        </div>
+
+        <details open>
+          <summary>Models and execution topology</summary>
+          <div class="atomic-grid">
+            <label class="atomic-wide">llama-server executable <input id="atomic-server" type="text" placeholder="Auto-detect from Atomic build"></label>
+            <label class="atomic-wide">Target GGUF <input id="atomic-model" type="text" placeholder="Profile model under C:\Program Files\llamacpp"></label>
+            <label class="atomic-wide">Draft / assistant GGUF <input id="atomic-draft-model" type="text" placeholder="DSpark or Gemma sidecar; empty for embedded Qwen NextN"></label>
+            <label class="atomic-wide">Vision mmproj <input id="atomic-mmproj" type="text" placeholder="Matching multimodal projector"></label>
+            <label class="atomic-check"><input id="atomic-spec-enabled" type="checkbox" checked> Enable stack-native speculative decoding</label>
+            <label class="atomic-check"><input id="atomic-vision-enabled" type="checkbox" checked> Enable vision</label>
+            <label class="atomic-check"><input id="atomic-context-shift" type="checkbox" checked> Enable context shift</label>
+            <label>Speculative type <input id="atomic-spec-type" type="text" readonly></label>
+            <label>Draft tokens <input id="atomic-draft-max" type="number" min="1" max="16" placeholder="profile default"></label>
+            <label>Target GPU layers <input id="atomic-gpu-layers" type="number" placeholder="999"></label>
+            <label>Draft GPU layers <input id="atomic-draft-gpu-layers" type="number" placeholder="999"></label>
+            <label>CPU MoE layers <input id="atomic-n-cpu-moe" type="number" min="0" placeholder="not used for dense/Ternary"></label>
+          </div>
+          <p id="atomic-topology-note" class="atomic-note"></p>
+        </details>
+
+        <details>
+          <summary>KV cache, performance, and server behavior</summary>
+          <div class="atomic-grid">
+            <label>Target K cache <select id="atomic-cache-k"></select></label>
+            <label>Target V cache <select id="atomic-cache-v"></select></label>
+            <label>Draft K cache <select id="atomic-draft-cache-k"></select></label>
+            <label>Draft V cache <select id="atomic-draft-cache-v"></select></label>
+            <label>Batch size <input id="atomic-batch-size" type="number" min="0" placeholder="profile default"></label>
+            <label>Micro-batch size <input id="atomic-ubatch-size" type="number" min="0" placeholder="profile default"></label>
+            <label>Reasoning <select id="atomic-reasoning"><option value="auto">auto</option><option value="on">on</option><option value="off">off</option></select></label>
+            <label>Turbo adaptive boundary <input id="atomic-turbo-adaptive" type="number" placeholder="automatic; 0 disables"></label>
+            <label class="atomic-check"><input id="atomic-prefetch" type="checkbox"> Expert upload prefetch</label>
+            <label>Prefetch setting <input id="atomic-prefetch-slots" type="number" min="1" value="1" title="1 selects the runtime's three-slot default"></label>
+            <label class="atomic-check"><input id="atomic-pin-host" type="checkbox"> Register mmap CPU weights</label>
+            <label class="atomic-check"><input id="atomic-metrics" type="checkbox" checked> Enable metrics</label>
+            <label class="atomic-wide">Additional argv <textarea id="atomic-extra" rows="2" placeholder="Literal extra arguments; structured conflicts are rejected"></textarea></label>
+          </div>
+        </details>
+
+        <div id="atomic-capabilities" class="atomic-capabilities"></div>
+        <div id="atomic-validation" class="atomic-validation" hidden></div>
+
+        <div class="atomic-actions">
+          <button id="atomic-preview" class="btn btn-primary" type="button">Validate &amp; preview</button>
+          <button id="atomic-start" class="btn btn-green" type="button">Start Atomic server</button>
+          <button id="atomic-stop" class="btn btn-red" type="button" disabled>Stop server</button>
+          <button id="atomic-copy-diagnostics" type="button">Copy diagnostics</button>
+        </div>
+
+        <div class="atomic-output-grid">
+          <section><h3>Effective command and environment</h3><pre id="atomic-command">Resolve a configuration to see the exact argv.</pre></section>
+          <section><h3>Live server state</h3><pre id="atomic-status-output">No managed server.</pre></section>
+          <section class="atomic-output-wide"><h3>Server log</h3><pre id="atomic-log">No log output.</pre></section>
+          <section class="atomic-output-wide"><h3>Metrics</h3><pre id="atomic-metrics-output">Metrics become available after a metrics-enabled server is ready.</pre></section>
+        </div>
+      </section>
+
+      <details class="legacy-editor">
+        <summary>Generic llama.cpp argument editor (legacy compatibility)</summary>
+        <div class="legacy-editor-body">
       <section id="model-section">
         <h2>Model Selection</h2>
         <div class="model-controls">
@@ -124,7 +220,11 @@
               <label>Speculative decoding
                 <select id="f-spec-type" data-hint="Speculative decoding mode (none = disabled).">
               <option value="none"></option>
-              <option value="mtp">mtp</option>
+              <option value="draft-simple">draft-simple</option>
+              <option value="draft-eagle3">draft-eagle3</option>
+              <option value="draft-mtp">draft-mtp (Gemma / embedded Qwen NextN)</option>
+              <option value="draft-dflash">draft-dflash</option>
+              <option value="draft-dspark">draft-dspark (Ternary Bonsai)</option>
               <option value="ngram-cache">ngram-cache</option>
               <option value="ngram-simple">ngram-simple</option>
               <option value="ngram-map-k">ngram-map-k</option>
@@ -592,8 +692,6 @@
 
               <label>Draft threads <input id="f-spec-draft-threads" placeholder="auto" type="text" data-hint="Threads for draft model."></input></label>
 
-              <label>Draft ctx size <input id="f-spec-draft-ctx-size" placeholder="0" type="text" data-hint="Context size for draft model."></input></label>
-
               <label>Draft gpu layers <input id="f-spec-draft-ngl" placeholder="auto" type="text" data-hint="GPU layers for draft model."></input></label>
 
               <label>Draft device <input id="f-spec-draft-device" placeholder="gpu0,gpu1" type="text" data-hint="Device IDs for draft model."></input></label>
@@ -638,6 +736,9 @@
               <option value="bf16">bf16</option>
               <option value="q8_0">q8_0</option>
               <option value="q4_0">q4_0</option>
+              <option value="turbo2">turbo2</option>
+              <option value="turbo3">turbo3</option>
+              <option value="turbo4">turbo4</option>
                 </select>
               </label>
 
@@ -649,6 +750,9 @@
               <option value="bf16">bf16</option>
               <option value="q8_0">q8_0</option>
               <option value="q4_0">q4_0</option>
+              <option value="turbo2">turbo2</option>
+              <option value="turbo3">turbo3</option>
+              <option value="turbo4">turbo4</option>
                 </select>
               </label>
 
@@ -814,6 +918,8 @@
         </section>
 
       </div>
+        </div>
+      </details>
     </main>
 
 
@@ -899,6 +1005,7 @@
 
 
   <script src="/app.js"></script>
+  <script src="/atomic.js"></script>
 
 </body>
 

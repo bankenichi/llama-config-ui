@@ -243,7 +243,6 @@ const idMap = {
   'spec-draft-model': 'f-spec-draft-model',
   'spec-draft-hf': 'f-spec-draft-hf',
   'spec-draft-threads': 'f-spec-draft-threads',
-  'spec-draft-ctx-size': 'f-spec-draft-ctx-size',
   'spec-draft-ngl': 'f-spec-draft-ngl',
   'spec-draft-device': 'f-spec-draft-device',
   'spec-replace': 'f-spec-replace',
