@@ -56,7 +56,7 @@ For each stack the UI handles:
   bundle.
 
 The C++ server remains authoritative for GGUF parsing, ternary kernels, DSpark
-graphs, image embedding, media-aware speculative fallback, prompt-cache coherence,
+graphs, image embedding, media-aware speculative coordination, prompt-cache coherence,
 and context-shift transactions. The UI configures and observes these paths; it does
 not reimplement inference behavior.
 
@@ -142,14 +142,15 @@ in ignored `atomic-profiles.json`, so local model paths and tuning do not enter 
 
 The UI rejects more than 16 DSpark draft tokens and a missing sidecar before
 launch. The server enforces the draft model's 4096 positions per parallel slot. On
-real media requests the server uses its safe target path and invalidates draft state;
-later text speculation resumes only after the paired rebuild.
+real media requests DSpark pools target-derived image features into the image's
+actual context-position span, so it can draft the image answer and a later
+full-history follow-up without a permanent media veto.
 
 ### Qwen profiles
 
-**Qwen NextN Daily** uses target `turbo4`/`turbo3`, draft `f16`/`f16`, 28 CPU MoE
+**Qwen NextN Daily** uses target `turbo4`/`turbo3`, lossless draft `q8_0`/`q8_0`, 28 CPU MoE
 layers, and two synchronous draft tokens. The embedded NextN graph reopens the same
-target GGUF internally, so the draft path is disabled. All-f16 target KV is a
+target GGUF internally, so no second draft-model path is used. All-f16 target KV is a
 diagnostic override, not the standard configuration.
 
 ### Gemma profiles
